@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milestone 1: JSON</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .book {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Milestone 1: JSON</h1>
+    <div id="single-book"></div>
+    <div id="book-list"></div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Function to display single book data
+        function displaySingleBook(data) {
+            const book = data.volumeInfo;
+            $('#single-book').html(`
+                <h2>Single Book Information</h2>
+                <div class="book">
+                    <h3>${book.title}</h3>
+                    <p>${book.description}</p>
+                    <img src="${book.imageLinks.thumbnail}" alt="${book.title}">
+                </div>
+            `);
+        }
+
+        // Function to display list of books
+        function displayBookList(data) {
+            $('#book-list').html('<h2>Book List</h2>');
+            data.items.forEach(item => {
+                const book = item.volumeInfo;
+                $('#book-list').append(`
+                    <div class="book">
+                        <h3>${book.title}</h3>
+                        <p>${book.description}</p>
+                        <img src="${book.imageLinks.thumbnail}" alt="${book.title}">
+                    </div>
+                `);
+            });
+        }
+
+        $(document).ready(function() {
+            // Fetch and display single book data
+            $.getJSON('https://www.googleapis.com/books/v1/volumes/Wfan6L9RGgYC', function(data) {
+                displaySingleBook(data);
+            });
+
+            // Fetch and display list of books
+            $.getJSON('https://www.googleapis.com/books/v1/volumes?q=modern%20web', function(data) {
+                displayBookList(data);
+            });
+        });
+    </script>
+</body>
+</html>
