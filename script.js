@@ -2,13 +2,19 @@ $(document).ready(function() {
     const apiKey = 'YOUR_GOOGLE_BOOKS_API_KEY';
     const resultsPerPage = 10;
     let currentPage = 1;
+    let currentSearchTerm = '';
 
+    const searchResultsTemplate = $('#search-results-template').html();
+    const bookDetailsTemplate = $('#book-details-template').html();
+
+    // Event listener for search button
     $('#search-button').click(function() {
-        const searchTerm = $('#search-term').val();
+        currentSearchTerm = $('#search-term').val();
         currentPage = 1;
-        searchBooks(searchTerm, currentPage);
+        searchBooks(currentSearchTerm, currentPage);
     });
 
+    // Function to search books using Google Books API
     function searchBooks(searchTerm, page) {
         const startIndex = (page - 1) * resultsPerPage;
         const url = `https://www.googleapis.com/books/v1/volumes?q=${searchTerm}&startIndex=${startIndex}&maxResults=${resultsPerPage}&key=${apiKey}`;
@@ -19,20 +25,57 @@ $(document).ready(function() {
         });
     }
 
+    // Function to display search results
     function displayResults(data) {
-        $('#results').empty();
-        data.items.forEach(item => {
-            const book = item.volumeInfo;
-            const bookElement = `
-                <div>
-                    <img src="${book.imageLinks?.thumbnail}" alt="${book.title}">
-                    <a href="book-details.html?id=${item.id}">${book.title}</a>
-                </div>
-            `;
-            $('#results').append(bookElement);
+        const books = data.items.map(item => ({
+            id: item.id,
+            cover: item.volumeInfo.imageLinks?.thumbnail,
+            title: item.volumeInfo.title,
+            author: item.volumeInfo.authors?.join(', '),
+            publisher: item.volumeInfo.publisher,
+            publishedDate: item.volumeInfo.publishedDate,
+            description: item.volumeInfo.description
+        }));
+        renderSearchResults(books);
+    }
+
+    function renderSearchResults(books) {
+        const rendered = Mustache.render(searchResultsTemplate, { books });
+        $('#search-results').html(rendered);
+    }
+
+    // Function to display book details
+    function displayBookDetails(data) {
+        const book = {
+            id: data.id,
+            cover: data.volumeInfo.imageLinks?.thumbnail,
+            title: data.volumeInfo.title,
+            author: data.volumeInfo.authors?.join(', '),
+            publisher: data.volumeInfo.publisher,
+            publishedDate: data.volumeInfo.publishedDate,
+            description: data.volumeInfo.description
+        };
+        renderBookDetails(book);
+    }
+
+    function renderBookDetails(book) {
+        const rendered = Mustache.render(bookDetailsTemplate, book);
+        $('#search-results').html(rendered);
+    }
+
+    $('#search-results').on('click', '.book-item', function() {
+        const bookId = $(this).data('id');
+        getBookDetails(bookId);
+    });
+
+    function getBookDetails(bookId) {
+        const url = `https://www.googleapis.com/books/v1/volumes/${bookId}?key=${apiKey}`;
+        $.getJSON(url, function(data) {
+            displayBookDetails(data);
         });
     }
 
+    // Function to display pagination
     function displayPagination(totalItems, searchTerm) {
         $('#pagination').empty();
         const totalPages = Math.ceil(totalItems / resultsPerPage);
@@ -49,38 +92,35 @@ $(document).ready(function() {
         });
     }
 
-    if (window.location.pathname.endsWith('book-details.html')) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const bookId = urlParams.get('id');
-        getBookDetails(bookId);
+    // Function to render the library
+    function renderLibrary(books) {
+        const rendered = Mustache.render(searchResultsTemplate, { books });
+        $('#library').html(rendered);
     }
 
-    function getBookDetails(bookId) {
-        const url = `https://www.googleapis.com/books/v1/volumes/${bookId}?key=${apiKey}`;
-        $.getJSON(url, function(data) {
-            displayBookDetails(data);
-        });
-    }
+    $('#toggle-view').click(function() {
+        const container = $('#search-results');
+        if (container.hasClass('grid-view')) {
+            container.removeClass('grid-view').addClass('list-view');
+            $(this).text('Switch to Grid View');
+        } else {
+            container.removeClass('list-view').addClass('grid-view');
+            $(this).text('Switch to List View');
+        }
+    });
 
-    function displayBookDetails(data) {
-        const book = data.volumeInfo;
-        const bookDetails = `
-            <div>
-                <h2>${book.title}</h2>
-                <img src="${book.imageLinks?.thumbnail}" alt="${book.title}">
-                <p>Authors: ${book.authors?.join(', ')}</p>
-                <p>Publisher: ${book.publisher}</p>
-                <p>Published Date: ${book.publishedDate}</p>
-                <p>${book.description}</p>
-            </div>
-        `;
-        $('#book-details').append(bookDetails);
-    }
+    $('#toggle-library').click(function() {
+        $('#search-results').toggle();
+        $('#library').toggle();
+        if ($('#library').is(':visible')) {
+            getBookshelf();
+            $(this).text('Show Search Results');
+        } else {
+            $(this).text('Show Library');
+        }
+    });
 
-    if (window.location.pathname.endsWith('bookshelf.html')) {
-        getBookshelf();
-    }
-
+    // Function to get the bookshelf
     function getBookshelf() {
         const bookshelfId = 'YOUR_BOOKSHELF_ID';
         const url = `https://www.googleapis.com/books/v1/users/YOUR_USER_ID/bookshelves/${bookshelfId}/volumes?key=${apiKey}`;
@@ -90,16 +130,27 @@ $(document).ready(function() {
     }
 
     function displayBookshelf(data) {
-        $('#bookshelf').empty();
-        data.items.forEach(item => {
-            const book = item.volumeInfo;
-            const bookElement = `
-                <div>
-                    <img src="${book.imageLinks?.thumbnail}" alt="${book.title}">
-                    <a href="book-details.html?id=${item.id}">${book.title}</a>
-                </div>
-            `;
-            $('#bookshelf').append(bookElement);
-        });
+        const books = data.items.map(item => ({
+            id: item.id,
+            cover: item.volumeInfo.imageLinks?.thumbnail,
+            title: item.volumeInfo.title,
+            author: item.volumeInfo.authors?.join(', ')
+        }));
+        renderLibrary(books);
     }
+
+    // Pagination and search integration
+    $('#next-page').click(function() {
+        if ((currentPage * resultsPerPage) < totalItems) {
+            currentPage++;
+            searchBooks(currentSearchTerm, currentPage);
+        }
+    });
+
+    $('#prev-page').click(function() {
+        if (currentPage > 1) {
+            currentPage--;
+            searchBooks(currentSearchTerm, currentPage);
+        }
+    });
 });

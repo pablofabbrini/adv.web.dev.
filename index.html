@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IT 4403 Individual Project Pablo Fabbrini</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/4.2.0/mustache.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="script.js" defer></script>
 </head>
 <body>
     <h1>IT 4403 Individual Project Pablo Fabbrini</h1>
@@ -26,11 +29,39 @@
         <button id="search-button">Search</button>
     </div>
     <div id="results"></div>
-    <div id="pagination"></div>
+    <div id="pagination">
+        <button id="prev-page">Previous</button>
+        <button id="next-page">Next</button>
+    </div>
     <div id="book-details"></div>
     <div id="bookshelf"></div>
 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="script.js"></script>
+    <header>
+        <button id="toggle-view">Switch to List View</button>
+        <button id="toggle-library">Show Library</button>
+    </header>
+    <main id="search-results" class="grid-view"></main>
+    <main id="library" class="hidden"></main>
+
+    <template id="search-results-template">
+        {{#books}}
+            <div class="book-item" data-id="{{id}}">
+                <img src="{{cover}}" alt="{{title}}">
+                <h3>{{title}}</h3>
+                <p>{{author}}</p>
+            </div>
+        {{/books}}
+    </template>
+
+    <template id="book-details-template">
+        <div class="book-details">
+            <h2>{{title}}</h2>
+            <img src="{{cover}}" alt="{{title}}">
+            <p><strong>Author:</strong> {{author}}</p>
+            <p><strong>Publisher:</strong> {{publisher}}</p>
+            <p><strong>Published Date:</strong> {{publishedDate}}</p>
+            <p>{{description}}</p>
+        </div>
+    </template>
 </body>
 </html>
